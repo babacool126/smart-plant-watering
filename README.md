@@ -22,18 +22,29 @@ Kamerplanten hebben regelmatig water nodig, maar dit wordt in de praktijk vaak v
 ### Systeemoverzicht
 
 ```
-Arduino UNO R3 (sensoren + relais + pomp)
-        |  USB serial
-        v
-  .NET MAUI-app  --- verwerkt sensordata, stuurt pompcommando's
-        |  MQTT (MQTTnet)
-        v
-   MQTT-broker (Mosquitto, lokaal)
-        |
-        v
-   Database (EF Core)
+                  .NET MAUI GUI
+                  (presentatielaag)
+                        |
+                  Service layer
+                  (orkestreert taken)
+                        |
+        +---------------+----------------+
+        |               |                |
+  Serial service   MQTT service   Database service
+  (Arduino comm.)  (pub/sub)      (EF Core repository)
+        |               |                |
+        v               v                v
+   Arduino UNO     Mosquitto broker    Database
+   (sensoren,       (lokaal)
+    relais, pomp)
 ```
-
+ 
+- **GUI → service layer**: de GUI kent alleen de service layer, niet de onderliggende techniek (Arduino/MQTT/database).
+- **Service layer → serial service**: seriële communicatie (USB) met de Arduino UNO — sensordata ontvangen, pompcommando's versturen.
+- **Service layer → MQTT service**: publiceert sensordata naar topics, luistert op commando-topics (MQTTnet).
+- **Service layer → database service**: schrijft metingen en waterbeurten weg via EF Core.
+*TODO: exacte topic-namen en berichtformaten (bv. JSON-payload per topic) toevoegen zodra vastgesteld.*
+ 
 *TODO: korte toelichting per pijl (wat gaat er precies over, welk protocol/formaat).*
 
 ### Klassendiagram (conceptueel model)
