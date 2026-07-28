@@ -15,7 +15,7 @@ IoT-systeem voor automatische plantenbewatering met bodemvocht- en temperatuurse
 
 ## Probleemstelling
 
-*TODO: 3-5 zinnen. Wat is het probleem (plant niet automatisch bewaterd), voor wie (jijzelf, als productowner), en wat is de scope (1 plant, geen automatische feedback-loop naar de gebruiker, etc.).*
+Kamerplanten hebben regelmatig water nodig, maar dit wordt in de praktijk vaak vergeten of gebeurt op basis van een inschatting. Hierdoor krijgen planten soms te weinig of juist te veel water, wat hun gezondheid negatief beïnvloedt. Het doel van dit project is om een IoT-systeem te ontwikkelen dat de bodemvochtigheid en temperatuur meet, deze gegevens registreert en op basis van een ingestelde drempel automatisch een plant kan bewateren. De scope van het project is beperkt tot één plant, één bodemvochtsensor, één temperatuursensor en één waterpomp, waarbij de gebruiker de metingen en bewateringsacties kan volgen via een .NET MAUI-app.
 
 ## Architectuur
 
