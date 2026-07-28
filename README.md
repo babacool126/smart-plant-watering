@@ -62,7 +62,7 @@ classDiagram
 
 ### Relationeel schema (logisch model)
 
-*TODO: ERD toevoegen (mermaid erDiagram), afgeleid van het klassendiagram hierboven.*
+*TODO: ERD toevoegen (mermaid erDiagram), afgeleid van het klassendiagram hierboven*
 
 ## Techstack en keuzes
 
