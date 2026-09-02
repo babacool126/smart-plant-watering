@@ -1,34 +1,51 @@
-// plant_sensors.ino
+#include <DHT.h>
 
+// -------------------------
+// Bodemvochtsensor
+// -------------------------
 const int MOISTURE_PIN = A0;
 const unsigned long MOISTURE_INTERVAL = 1000;
 
-// Kalibratiewaarden, gemeten op jouw sensor
-const int MOISTURE_DRY = 456;  // sensor in lucht / zeer droog
-const int MOISTURE_WET = 200;  // natte grond
-
-// Boven deze ruwe waarde beschouwen we de grond als te droog
+const int MOISTURE_DRY = 456;
+const int MOISTURE_WET = 200;
 const int MOISTURE_THRESHOLD = 280;
 
 unsigned long lastMoistureRead = 0;
 int lastMoistureRaw = 0;
 int lastMoisturePercent = 0;
 
+// -------------------------
+// DHT11
+// -------------------------
+const int DHT_PIN = 2;
+const int DHT_TYPE = DHT11;
+const unsigned long DHT_INTERVAL = 2000;
+
+DHT dht(DHT_PIN, DHT_TYPE);
+
+unsigned long lastDhtRead = 0;
+float lastTemperature = 0.0;
+float lastHumidity = 0.0;
+
 void setup() {
   Serial.begin(9600);
-  Serial.println("Plant sensors gestart (non-blocking)");
+
+  dht.begin();
+
+  Serial.println("Plant sensors gestart");
 }
 
 void loop() {
   unsigned long now = millis();
 
+  // -------------------------
+  // Bodemvocht meten
+  // -------------------------
   if (now - lastMoistureRead >= MOISTURE_INTERVAL) {
     lastMoistureRead = now;
 
     lastMoistureRaw = analogRead(MOISTURE_PIN);
 
-    // Hoge raw = droog, lage raw = nat.
-    // Daarom mappen we droog naar 0% en nat naar 100%.
     lastMoisturePercent = map(
       lastMoistureRaw,
       MOISTURE_DRY,
@@ -37,7 +54,11 @@ void loop() {
       100
     );
 
-    lastMoisturePercent = constrain(lastMoisturePercent, 0, 100);
+    lastMoisturePercent = constrain(
+      lastMoisturePercent,
+      0,
+      100
+    );
 
     Serial.print("Bodemvocht raw: ");
     Serial.print(lastMoistureRaw);
@@ -47,6 +68,28 @@ void loop() {
 
     if (lastMoistureRaw > MOISTURE_THRESHOLD) {
       Serial.println("-> grond te droog, plant heeft water nodig");
+    }
+  }
+
+  // -------------------------
+  // DHT11 meten
+  // -------------------------
+  if (now - lastDhtRead >= DHT_INTERVAL) {
+    lastDhtRead = now;
+
+    lastHumidity = dht.readHumidity();
+    lastTemperature = dht.readTemperature();
+
+    if (isnan(lastHumidity) || isnan(lastTemperature)) {
+      Serial.println("Fout bij uitlezen DHT11");
+    } else {
+      Serial.print("Temperatuur: ");
+      Serial.print(lastTemperature);
+      Serial.println(" C");
+
+      Serial.print("Luchtvochtigheid: ");
+      Serial.print(lastHumidity);
+      Serial.println("%");
     }
   }
 }
