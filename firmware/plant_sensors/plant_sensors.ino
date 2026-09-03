@@ -1,8 +1,9 @@
 #include <DHT.h>
 
-// -------------------------
+// Relais / pomp
+const int RELAY_PIN = 7;
+
 // Bodemvochtsensor
-// -------------------------
 const int MOISTURE_PIN = A0;
 const unsigned long MOISTURE_INTERVAL = 1000;
 
@@ -14,9 +15,7 @@ unsigned long lastMoistureRead = 0;
 int lastMoistureRaw = 0;
 int lastMoisturePercent = 0;
 
-// -------------------------
 // DHT11
-// -------------------------
 const int DHT_PIN = 2;
 const int DHT_TYPE = DHT11;
 const unsigned long DHT_INTERVAL = 2000;
@@ -32,15 +31,21 @@ void setup() {
 
   dht.begin();
 
+  // Relais instellen
+  pinMode(RELAY_PIN, OUTPUT);
+
+  // De relaismodule is HIGH-triggered:
+  // LOW = relais uit / pomp uit
+  // HIGH = relais aan / pomp aan
+  digitalWrite(RELAY_PIN, LOW);
+
   Serial.println("Plant sensors gestart");
 }
 
 void loop() {
   unsigned long now = millis();
 
-  // -------------------------
   // Bodemvocht meten
-  // -------------------------
   if (now - lastMoistureRead >= MOISTURE_INTERVAL) {
     lastMoistureRead = now;
 
@@ -71,9 +76,7 @@ void loop() {
     }
   }
 
-  // -------------------------
   // DHT11 meten
-  // -------------------------
   if (now - lastDhtRead >= DHT_INTERVAL) {
     lastDhtRead = now;
 
