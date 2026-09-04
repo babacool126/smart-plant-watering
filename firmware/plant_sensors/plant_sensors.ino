@@ -25,6 +25,7 @@ DHT dht(DHT_PIN, DHT_TYPE);
 unsigned long lastDhtRead = 0;
 float lastTemperature = 0.0;
 float lastHumidity = 0.0;
+String serialCommand = "";
 
 void setup() {
   Serial.begin(9600);
@@ -44,6 +45,21 @@ void setup() {
 
 void loop() {
   unsigned long now = millis();
+
+  // Commando's ontvangen via USB/Serial
+  if (Serial.available() > 0) {
+    serialCommand = Serial.readStringUntil('\n');
+    serialCommand.trim();
+
+    if (serialCommand == "PUMP_ON") {
+      digitalWrite(RELAY_PIN, HIGH);
+      Serial.println("Pomp AAN");
+    }
+    else if (serialCommand == "PUMP_OFF") {
+      digitalWrite(RELAY_PIN, LOW);
+      Serial.println("Pomp UIT");
+    }
+  }
 
   // Bodemvocht meten
   if (now - lastMoistureRead >= MOISTURE_INTERVAL) {
