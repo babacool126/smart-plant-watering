@@ -1,26 +1,31 @@
-﻿using MQTTnet;
+﻿using System.IO.Ports;
+using MQTTnet;
+
+using var serialPort = new SerialPort("COM3", 9600);
 
 var mqttFactory = new MqttClientFactory();
-
 using var mqttClient = mqttFactory.CreateMqttClient();
 
 var mqttClientOptions = new MqttClientOptionsBuilder()
     .WithTcpServer("node-01.lab.thomaslab.nl", 1883)
     .Build();
 
-Console.WriteLine("Verbinden met MQTT broker...");
-
 await mqttClient.ConnectAsync(mqttClientOptions);
 
-Console.WriteLine("Verbonden.");
+serialPort.Open();
 
-var message = new MqttApplicationMessageBuilder()
-    .WithTopic("plant/test")
-    .WithPayload("hello from C#")
-    .Build();
+Console.WriteLine("Gateway gestart.");
 
-await mqttClient.PublishAsync(message);
+while (true)
+{
+    string line = serialPort.ReadLine();
 
-Console.WriteLine("Bericht gepubliceerd.");
+    Console.WriteLine($"Arduino: {line}");
 
-await mqttClient.DisconnectAsync();
+    var message = new MqttApplicationMessageBuilder()
+        .WithTopic("plant/serial")
+        .WithPayload(line)
+        .Build();
+
+    await mqttClient.PublishAsync(message);
+}
