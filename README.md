@@ -1,4 +1,4 @@
-IoT-# smart-plant-watering
+# Smart Plant Watering
 
 IoT-systeem voor automatische plantenbewatering met bodemvocht- en temperatuursensoren, Arduino, MQTT en een .NET MAUI-app.
 
@@ -73,7 +73,8 @@ classDiagram
 
 ### Relationeel schema (logisch model)
 
-*TODO: ERD toevoegen (mermaid erDiagram), afgeleid van het klassendiagram hierboven.*
+Het relationele schema is afgeleid van het klassendiagram en beschreven in
+[`docs/relational-schema.md`](docs/relational-schema.md).
 
 ## Techstack en keuzes
 
@@ -84,7 +85,41 @@ classDiagram
 | Communicatie Arduino ↔ app | USB serial | Geen extra hardware nodig, simpel te implementeren |
 | Communicatie app ↔ backend | MQTT (MQTTnet) | Standaardprotocol voor IoT, dekt socketcommunicatie-leerdoel |
 | Broker | Mosquitto (lokaal) | Geen internetafhankelijkheid tijdens demo |
-| Opslag | EF Core (ORM) | *TODO: welke database (SQLite/SQL Server)* |
+| Opslag | PostgreSQL + EF Core | Centrale relationele opslag; PostgreSQL draait als Podman-container met persistente opslag |
+
+## Databasekeuze
+
+Voor de persistente opslag van gegevens is gekozen voor **PostgreSQL**.
+
+Voor het project zijn SQLite en PostgreSQL overwogen. SQLite heeft als voordeel
+dat geen aparte databaseserver nodig is en is daardoor eenvoudig te gebruiken
+voor lokale opslag. Voor dit project is echter gekozen voor centrale opslag op
+de Linux-server.
+
+PostgreSQL wordt als Podman-container uitgevoerd, naast de andere services van
+het systeem. De database kan hierdoor gebruikmaken van het bestaande
+containernetwerk. De databasegegevens worden opgeslagen in een persistent
+volume, zodat deze behouden blijven wanneer de container opnieuw wordt
+aangemaakt.
+
+PostgreSQL sluit daarnaast goed aan op het relationele schema met `Plant`,
+`SensorReading` en `WateringEvent`.
+
+Hoewel PostgreSQL meer configuratie en beheer vereist dan SQLite, is deze extra
+complexiteit binnen dit project beperkt doordat voor de infrastructuur al
+Podman-containers worden gebruikt.
+
+### Vergelijking
+
+| Eigenschap | SQLite | PostgreSQL |
+|---|---|---|
+| Architectuur | Lokale database | Client/server-database |
+| Aparte databaseservice | Nee | Ja |
+| Centrale opslag | Minder geschikt | Ja |
+| Containeriseerbaar | Niet noodzakelijk | Ja |
+| Persistentie | Databasebestand | Persistent volume |
+| Beheer | Eenvoudig | Meer configuratie |
+| Geschikt voor dit project | Ja | **Gekozen** |
 
 ## Concurrency-aanpak
 
@@ -122,4 +157,6 @@ classDiagram
 
 - Tweede plant (extra bodemvochtsensor + extra pomp, zelfde architectuur)
 - Waterniveausensor in het reservoir (voorkomt droog draaien van de pomp)
-- Wireless communicatie Arduino ↔ app (ESP32/Bluetooth) i.p.v. USB serialsysteem voor automatische plantenbewatering met bodemvocht- en temperatuursensoren, Arduino, MQTT en een .NET MAUI-app.
+- Wireless communicatie Arduino ↔ app (ESP32/Bluetooth) i.p.v. USB serial
+
+
