@@ -4,6 +4,7 @@ using System.Threading.Channels;
 using Microsoft.EntityFrameworkCore;
 using SerialMqttGateway.Data;
 using SerialMqttGateway.Repositories;
+using SerialMqttGateway.Models;
 
 var connectionString =
     Environment.GetEnvironmentVariable("PLANT_DB_CONNECTION")
@@ -15,9 +16,19 @@ var dbOptions = new DbContextOptionsBuilder<PlantDbContext>()
     .Options;
 
 await using var dbContext = new PlantDbContext(dbOptions);
+
 var repository = new PlantRepository(dbContext);
 
+var plant = await dbContext.Plants.FindAsync(1);
+
+if (plant is null)
+{
+    throw new InvalidOperationException("Plant met ID 1 niet gevonden.");
+}
+
+
 using var serialPort = new SerialPort("COM3", 9600);
+serialPort.Open();
 
 await using var mqttService =
     new MqttService("node-01.lab.thomaslab.nl", 1883);
@@ -25,6 +36,71 @@ await using var mqttService =
 await mqttService.ConnectAsync();
 
 var pumpSemaphore = new SemaphoreSlim(1, 1);
+
+var sensorState = new SensorState();
+
+DateTime lastWateringTime = DateTime.MinValue;
+var wateringCooldown = TimeSpan.FromMinutes(1);
+
+var wateringTask = Task.Run(async () =>
+{
+    while (true)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(10));
+
+        if (sensorState.Moisture is int moisture)
+        {
+            Console.WriteLine(
+                $"Automatische check: moisture={moisture}, threshold={plant.MoistureThreshold}");
+
+            if (moisture > plant.MoistureThreshold)
+            {
+                Console.WriteLine("Plant is te droog.");
+
+                if (DateTime.UtcNow - lastWateringTime < wateringCooldown)
+                {
+                    Console.WriteLine("Cooldown actief, nog niet opnieuw bewateren.");
+                    continue;
+                }
+
+                await pumpSemaphore.WaitAsync();
+
+                try
+                {
+                    Console.WriteLine("Automatische bewatering gestart.");
+
+                    serialPort.WriteLine("PUMP_ON");
+
+                    await Task.Delay(TimeSpan.FromSeconds(5));
+
+                    serialPort.WriteLine("PUMP_OFF");
+
+                    lastWateringTime = DateTime.UtcNow;
+
+                    await repository.AddWateringEventAsync(
+                        new WateringEvent
+                        {
+                            PlantId = plant.PlantId,
+                            StartedAt = lastWateringTime.AddSeconds(-5),
+                            DurationSeconds = 5,
+                            Reason = "Automatic moisture threshold"
+                        });
+
+                    Console.WriteLine("Waterbeurt opgeslagen in database.");
+                    Console.WriteLine("Automatische bewatering gestopt.");
+                }
+                finally
+                {
+                    pumpSemaphore.Release();
+                }
+            }
+            else
+            {
+                Console.WriteLine("Plant is vochtig genoeg.");
+            }
+        }
+    }
+});
 
 // Subscribe asynchronously to MQTT pump commands
 await mqttService.SubscribeAsync(
@@ -61,7 +137,6 @@ await mqttService.SubscribeAsync(
     });
 
 
-serialPort.Open();
 
 Console.WriteLine("Gateway gestart.");
 Console.WriteLine("Luistert naar MQTT topic: plant/pump/command");
@@ -83,6 +158,8 @@ var mqttPublisherTask = Task.Run(async () =>
 
             if (int.TryParse(valueText, out int moisture))
             {
+                sensorState.Moisture = moisture;
+
                 string payload = JsonSerializer.Serialize(new
                 {
                     value = moisture,
@@ -106,6 +183,7 @@ var mqttPublisherTask = Task.Run(async () =>
                 System.Globalization.CultureInfo.InvariantCulture,
                 out double temperature))
             {
+                sensorState.Temperature = temperature;
                 string payload = JsonSerializer.Serialize(new
                 {
                     value = temperature,
@@ -129,6 +207,7 @@ var mqttPublisherTask = Task.Run(async () =>
                 System.Globalization.CultureInfo.InvariantCulture,
                 out double humidity))
             {
+                sensorState.Humidity = humidity;
                 string payload = JsonSerializer.Serialize(new
                 {
                     value = humidity,
