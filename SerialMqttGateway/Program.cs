@@ -9,6 +9,8 @@ await using var mqttService =
 
 await mqttService.ConnectAsync();
 
+var pumpSemaphore = new SemaphoreSlim(1, 1);
+
 // Subscribe asynchronously to MQTT pump commands
 await mqttService.SubscribeAsync(
     "plant/pump/command",
@@ -22,19 +24,27 @@ await mqttService.SubscribeAsync(
             .GetProperty("action")
             .GetString();
 
-        if (action == "on")
-        {
-            serialPort.WriteLine("PUMP_ON");
-            Console.WriteLine("PUMP_ON naar Arduino gestuurd");
-        }
-        else if (action == "off")
-        {
-            serialPort.WriteLine("PUMP_OFF");
-            Console.WriteLine("PUMP_OFF naar Arduino gestuurd");
-        }
+        await pumpSemaphore.WaitAsync();
 
-        await Task.CompletedTask;
+        try
+        {
+            if (action == "on")
+            {
+                serialPort.WriteLine("PUMP_ON");
+                Console.WriteLine("PUMP_ON naar Arduino gestuurd");
+            }
+            else if (action == "off")
+            {
+                serialPort.WriteLine("PUMP_OFF");
+                Console.WriteLine("PUMP_OFF naar Arduino gestuurd");
+            }
+        }
+        finally
+        {
+            pumpSemaphore.Release();
+        }
     });
+
 
 serialPort.Open();
 
