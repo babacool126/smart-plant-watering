@@ -1,5 +1,6 @@
 using MQTTnet;
 
+// Provides asynchronous MQTT connection, publishing, subscription and cleanup.
 public sealed class MqttService : IAsyncDisposable
 {
     private readonly IMqttClient _mqttClient;

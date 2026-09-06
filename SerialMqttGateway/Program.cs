@@ -8,6 +8,7 @@ await using var mqttService =
 
 await mqttService.ConnectAsync();
 
+// Subscribe asynchronously to MQTT pump commands
 await mqttService.SubscribeAsync(
     "plant/pump/command",
     async (topic, payload) =>
@@ -39,6 +40,7 @@ serialPort.Open();
 Console.WriteLine("Gateway gestart.");
 Console.WriteLine("Luistert naar MQTT topic: plant/pump/command");
 
+// Parse Arduino sensor output and publish it as JSON to MQTT
 while (true)
 {
     string line = serialPort.ReadLine().Trim();
