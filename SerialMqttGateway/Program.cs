@@ -1,5 +1,6 @@
 ﻿using System.IO.Ports;
 using System.Text.Json;
+using System.Threading.Channels;
 
 using var serialPort = new SerialPort("COM3", 9600);
 
@@ -40,77 +41,89 @@ serialPort.Open();
 Console.WriteLine("Gateway gestart.");
 Console.WriteLine("Luistert naar MQTT topic: plant/pump/command");
 
-// Parse Arduino sensor output and publish it as JSON to MQTT
+// Thread-safe channel between the serial reader and MQTT publisher
+var sensorChannel = Channel.CreateUnbounded<string>();
+
+// Consume serial messages from the channel and publish sensor data to MQTT
+var mqttPublisherTask = Task.Run(async () =>
+{
+    await foreach (string line in sensorChannel.Reader.ReadAllAsync())
+    {
+        if (line.StartsWith("Bodemvocht raw:"))
+        {
+            string valueText = line
+                .Split(':', 2)[1]
+                .Trim()
+                .Split(' ', 2)[0];
+
+            if (int.TryParse(valueText, out int moisture))
+            {
+                string payload = JsonSerializer.Serialize(new
+                {
+                    value = moisture,
+                    unit = "raw"
+                });
+
+                await mqttService.PublishAsync(
+                    "plant/sensors/moisture",
+                    payload);
+            }
+        }
+        else if (line.StartsWith("Temperatuur:"))
+        {
+            string valueText = line
+                .Split(':', 2)[1]
+                .Trim()
+                .Split(' ', 2)[0];
+
+            if (double.TryParse(
+                valueText,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out double temperature))
+            {
+                string payload = JsonSerializer.Serialize(new
+                {
+                    value = temperature,
+                    unit = "celsius"
+                });
+
+                await mqttService.PublishAsync(
+                    "plant/sensors/temperature",
+                    payload);
+            }
+        }
+        else if (line.StartsWith("Luchtvochtigheid:"))
+        {
+            string valueText = line
+                .Split(':', 2)[1]
+                .Trim()
+                .TrimEnd('%');
+
+            if (double.TryParse(
+                valueText,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out double humidity))
+            {
+                string payload = JsonSerializer.Serialize(new
+                {
+                    value = humidity,
+                    unit = "percent"
+                });
+
+                await mqttService.PublishAsync(
+                    "plant/sensors/humidity",
+                    payload);
+            }
+        }
+    }
+});
+
 while (true)
 {
     string line = serialPort.ReadLine().Trim();
 
     Console.WriteLine($"Arduino: {line}");
 
-    if (line.StartsWith("Bodemvocht raw:"))
-    {
-        string valueText = line
-            .Split(':', 2)[1]
-            .Trim()
-            .Split(' ', 2)[0];
-
-        if (int.TryParse(valueText, out int moisture))
-        {
-            string payload = JsonSerializer.Serialize(new
-            {
-                value = moisture,
-                unit = "raw"
-            });
-
-            await mqttService.PublishAsync(
-                "plant/sensors/moisture",
-                payload);
-        }
-    }
-    else if (line.StartsWith("Temperatuur:"))
-    {
-        string valueText = line
-            .Split(':', 2)[1]
-            .Trim()
-            .Split(' ', 2)[0];
-
-        if (double.TryParse(
-            valueText,
-            System.Globalization.CultureInfo.InvariantCulture,
-            out double temperature))
-        {
-            string payload = JsonSerializer.Serialize(new
-            {
-                value = temperature,
-                unit = "celsius"
-            });
-
-            await mqttService.PublishAsync(
-                "plant/sensors/temperature",
-                payload);
-        }
-    }
-    else if (line.StartsWith("Luchtvochtigheid:"))
-    {
-        string valueText = line
-            .Split(':', 2)[1]
-            .Trim()
-            .TrimEnd('%');
-
-        if (double.TryParse(
-            valueText,
-            System.Globalization.CultureInfo.InvariantCulture,
-            out double humidity))
-        {
-            string payload = JsonSerializer.Serialize(new
-            {
-                value = humidity,
-                unit = "percent"
-            });
-
-            await mqttService.PublishAsync(
-                "plant/sensors/humidity",
-                payload);
-        }
-    }
+    await sensorChannel.Writer.WriteAsync(line);
 }
+
