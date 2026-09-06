@@ -1,6 +1,21 @@
 ﻿using System.IO.Ports;
 using System.Text.Json;
 using System.Threading.Channels;
+using Microsoft.EntityFrameworkCore;
+using SerialMqttGateway.Data;
+using SerialMqttGateway.Repositories;
+
+var connectionString =
+    Environment.GetEnvironmentVariable("PLANT_DB_CONNECTION")
+    ?? throw new InvalidOperationException(
+        "Environment variable PLANT_DB_CONNECTION is niet ingesteld.");
+
+var dbOptions = new DbContextOptionsBuilder<PlantDbContext>()
+    .UseNpgsql(connectionString)
+    .Options;
+
+await using var dbContext = new PlantDbContext(dbOptions);
+var repository = new PlantRepository(dbContext);
 
 using var serialPort = new SerialPort("COM3", 9600);
 
