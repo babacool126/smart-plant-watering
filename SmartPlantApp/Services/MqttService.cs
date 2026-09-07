@@ -9,6 +9,7 @@ public class MqttService
 
     public event Action<int>? MoistureReceived;
     public event Action<double>? TemperatureReceived;
+    public event Action<string>? HistoryReceived;
 
     public MqttService()
     {
@@ -24,6 +25,12 @@ public class MqttService
 
             try
             {
+                if (topic == "plant/history/response")
+                {
+                    HistoryReceived?.Invoke(payload);
+                    return Task.CompletedTask;
+                }
+
                 using var document = JsonDocument.Parse(payload);
                 var value = document.RootElement.GetProperty("value");
 
@@ -65,10 +72,27 @@ public class MqttService
             {
                 f.WithTopic("plant/sensors/temperature");
             })
+            .WithTopicFilter(f =>
+            {
+                f.WithTopic("plant/history/response");
+            })
             .Build();
 
         await _mqttClient.SubscribeAsync(subscribeOptions);
 
-        Console.WriteLine("Subscribed to moisture and temperature topics");
+        Console.WriteLine(
+            "Subscribed to moisture, temperature and history topics");
+    }
+
+    public async Task RequestHistoryAsync()
+    {
+        var message = new MqttApplicationMessageBuilder()
+            .WithTopic("plant/history/request")
+            .WithPayload("{}")
+            .Build();
+
+        await _mqttClient.PublishAsync(message);
+
+        Console.WriteLine("History request published.");
     }
 }

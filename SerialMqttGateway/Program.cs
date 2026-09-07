@@ -186,10 +186,57 @@ await mqttService.SubscribeAsync(
 
     });
 
+await mqttService.SubscribeAsync(
+    "plant/history/request",
+    async (topic, payload) =>
+    {
+        Console.WriteLine($"Historieverzoek ontvangen: {payload}");
 
+        await dbSemaphore.WaitAsync();
+
+        try
+        {
+            var readings = await repository.GetRecentSensorReadingsAsync(
+                plant.PlantId,
+                10);
+
+            var wateringEvents = await repository.GetRecentWateringEventsAsync(
+                plant.PlantId,
+                10);
+
+            string response = JsonSerializer.Serialize(new
+            {
+                readings = readings.Select(reading => new
+                {
+                    reading.MeasuredAt,
+                    reading.Moisture,
+                    reading.Temperature,
+                    reading.Humidity
+                }),
+                wateringEvents = wateringEvents.Select(wateringEvent => new
+                {
+                    wateringEvent.StartedAt,
+                    wateringEvent.DurationSeconds,
+                    wateringEvent.Reason
+                })
+            });
+
+            await mqttService.PublishAsync(
+                "plant/history/response",
+                response);
+
+            Console.WriteLine("Historie via MQTT gepubliceerd.");
+        }
+        finally
+        {
+            dbSemaphore.Release();
+        }
+    });
 
 Console.WriteLine("Gateway gestart.");
-Console.WriteLine("Luistert naar MQTT topic: plant/pump/command");
+Console.WriteLine("Luistert naar MQTT topics:");
+Console.WriteLine("- plant/pump/command");
+Console.WriteLine("- plant/history/request");
 
 // Thread-safe channel between the serial reader and MQTT publisher
 var sensorChannel = Channel.CreateUnbounded<string>();

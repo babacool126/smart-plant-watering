@@ -4,36 +4,67 @@
              x:Class="SmartPlantApp.MainPage"
              Title="Smart Plant">
 
-    <VerticalStackLayout
-        Padding="30"
-        Spacing="24">
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="30"
+            Spacing="24">
 
-        <Label
-            Text="Smart Plant"
-            FontSize="32"
-            FontAttributes="Bold"
-            HorizontalOptions="Center" />
+            <Label
+                Text="Smart Plant"
+                FontSize="32"
+                FontAttributes="Bold"
+                HorizontalOptions="Center" />
 
-        <Label
-            Text="Bodemvocht"
-            FontSize="20" />
+            <Label
+                Text="Bodemvocht"
+                FontSize="20" />
 
-        <Label
-            x:Name="MoistureLabel"
-            Text="--"
-            FontSize="36"
-            FontAttributes="Bold" />
+            <Label
+                x:Name="MoistureLabel"
+                Text="--"
+                FontSize="36"
+                FontAttributes="Bold" />
 
-        <Label
-            Text="Temperatuur"
-            FontSize="20" />
+            <Label
+                Text="Temperatuur"
+                FontSize="20" />
 
-        <Label
-            x:Name="TemperatureLabel"
-            Text="-- °C"
-            FontSize="36"
-            FontAttributes="Bold" />
+            <Label
+                x:Name="TemperatureLabel"
+                Text="-- °C"
+                FontSize="36"
+                FontAttributes="Bold" />
 
-    </VerticalStackLayout>
+            <Label
+                Text="Historie"
+                FontSize="28"
+                FontAttributes="Bold"
+                Margin="0,20,0,0" />
+
+            <Button
+                Text="Historie vernieuwen"
+                Clicked="OnRefreshHistoryClicked" />
+
+            <Label
+                Text="Recente metingen"
+                FontSize="20"
+                FontAttributes="Bold" />
+
+            <VerticalStackLayout
+                x:Name="ReadingsHistoryLayout"
+                Spacing="8" />
+
+            <Label
+                Text="Waterbeurten"
+                FontSize="20"
+                FontAttributes="Bold"
+                Margin="0,16,0,0" />
+
+            <VerticalStackLayout
+                x:Name="WateringHistoryLayout"
+                Spacing="8" />
+
+        </VerticalStackLayout>
+    </ScrollView>
 
 </ContentPage>
