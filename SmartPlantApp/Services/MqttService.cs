@@ -1,10 +1,14 @@
 using MQTTnet;
+using System.Text.Json;
 
 namespace SmartPlantApp.Services;
 
 public class MqttService
 {
     private readonly IMqttClient _mqttClient;
+
+    public event Action<int>? MoistureReceived;
+    public event Action<double>? TemperatureReceived;
 
     public MqttService()
     {
@@ -17,6 +21,25 @@ public class MqttService
             var payload = e.ApplicationMessage.ConvertPayloadToString();
 
             Console.WriteLine($"MQTT message received on {topic}: {payload}");
+
+            try
+            {
+                using var document = JsonDocument.Parse(payload);
+                var value = document.RootElement.GetProperty("value");
+
+                if (topic == "plant/sensors/moisture")
+                {
+                    MoistureReceived?.Invoke(value.GetInt32());
+                }
+                else if (topic == "plant/sensors/temperature")
+                {
+                    TemperatureReceived?.Invoke(value.GetDouble());
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to process MQTT message: {ex.Message}");
+            }
 
             return Task.CompletedTask;
         };
