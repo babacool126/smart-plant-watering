@@ -36,6 +36,7 @@ await using var mqttService =
 await mqttService.ConnectAsync();
 
 var pumpSemaphore = new SemaphoreSlim(1, 1);
+var dbSemaphore = new SemaphoreSlim(1, 1);
 
 var sensorState = new SensorState();
 
@@ -208,6 +209,7 @@ var mqttPublisherTask = Task.Run(async () =>
                 out double humidity))
             {
                 sensorState.Humidity = humidity;
+
                 string payload = JsonSerializer.Serialize(new
                 {
                     value = humidity,
@@ -217,6 +219,34 @@ var mqttPublisherTask = Task.Run(async () =>
                 await mqttService.PublishAsync(
                     "plant/sensors/humidity",
                     payload);
+
+                if (sensorState.Moisture is int currentMoisture &&
+                    sensorState.Temperature is double currentTemperature &&
+                    sensorState.Humidity is double currentHumidity)
+                {
+                    await dbSemaphore.WaitAsync();
+
+                    try
+                    {
+                        await repository.AddSensorReadingAsync(
+                            new SensorReading
+                            {
+                                PlantId = plant.PlantId,
+                                Moisture = currentMoisture,
+                                Temperature = currentTemperature,
+                                Humidity = currentHumidity,
+                                MeasuredAt = DateTime.UtcNow
+                            });
+
+                        Console.WriteLine(
+                            $"Meting opgeslagen: moisture={currentMoisture}, " +
+                            $"temperature={currentTemperature}, humidity={currentHumidity}");
+                    }
+                    finally
+                    {
+                        dbSemaphore.Release();
+                    }
+                }
             }
         }
     }
