@@ -32,16 +32,20 @@ public class MqttService
         var result = await _mqttClient.ConnectAsync(options);
 
         Console.WriteLine($"MQTT connection result: {result.ResultCode}");
+
         var subscribeOptions = new MqttClientSubscribeOptionsBuilder()
             .WithTopicFilter(f =>
             {
                 f.WithTopic("plant/sensors/moisture");
             })
+            .WithTopicFilter(f =>
+            {
+                f.WithTopic("plant/sensors/temperature");
+            })
             .Build();
 
         await _mqttClient.SubscribeAsync(subscribeOptions);
 
-        Console.WriteLine("Subscribed to plant/sensors/moisture");
-
+        Console.WriteLine("Subscribed to moisture and temperature topics");
     }
 }
