@@ -41,6 +41,8 @@ var dbSemaphore = new SemaphoreSlim(1, 1);
 var sensorState = new SensorState();
 
 DateTime lastWateringTime = DateTime.MinValue;
+DateTime? manualWateringStartedAt = null;
+
 var wateringCooldown = TimeSpan.FromMinutes(1);
 
 var wateringTask = Task.Run(async () =>
@@ -78,16 +80,26 @@ var wateringTask = Task.Run(async () =>
 
                     lastWateringTime = DateTime.UtcNow;
 
-                    await repository.AddWateringEventAsync(
-                        new WateringEvent
-                        {
-                            PlantId = plant.PlantId,
-                            StartedAt = lastWateringTime.AddSeconds(-5),
-                            DurationSeconds = 5,
-                            Reason = "Automatic moisture threshold"
-                        });
+                    await dbSemaphore.WaitAsync();
 
-                    Console.WriteLine("Waterbeurt opgeslagen in database.");
+                    try
+                    {
+                        await repository.AddWateringEventAsync(
+                            new WateringEvent
+                            {
+                                PlantId = plant.PlantId,
+                                StartedAt = lastWateringTime.AddSeconds(-5),
+                                DurationSeconds = 5,
+                                Reason = "Automatic moisture threshold"
+                            });
+
+                        Console.WriteLine("Waterbeurt opgeslagen in database.");
+                    }
+                    finally
+                    {
+                        dbSemaphore.Release();
+                    }
+
                     Console.WriteLine("Automatische bewatering gestopt.");
                 }
                 finally
@@ -123,11 +135,47 @@ await mqttService.SubscribeAsync(
             if (action == "on")
             {
                 serialPort.WriteLine("PUMP_ON");
+
+                manualWateringStartedAt ??= DateTime.UtcNow;
+
                 Console.WriteLine("PUMP_ON naar Arduino gestuurd");
             }
             else if (action == "off")
             {
                 serialPort.WriteLine("PUMP_OFF");
+
+                if (manualWateringStartedAt is DateTime startedAt)
+                {
+                    DateTime stoppedAt = DateTime.UtcNow;
+
+                    int durationSeconds = Math.Max(
+                        1,
+                        (int)Math.Round((stoppedAt - startedAt).TotalSeconds));
+
+                    await dbSemaphore.WaitAsync();
+
+                    try
+                    {
+                        await repository.AddWateringEventAsync(
+                            new WateringEvent
+                            {
+                                PlantId = plant.PlantId,
+                                StartedAt = startedAt,
+                                DurationSeconds = durationSeconds,
+                                Reason = "Manual MQTT command"
+                            });
+
+                        Console.WriteLine(
+                            $"Handmatige waterbeurt opgeslagen: duration={durationSeconds}s");
+                    }
+                    finally
+                    {
+                        dbSemaphore.Release();
+                    }
+
+                    manualWateringStartedAt = null;
+                }
+
                 Console.WriteLine("PUMP_OFF naar Arduino gestuurd");
             }
         }
@@ -135,6 +183,7 @@ await mqttService.SubscribeAsync(
         {
             pumpSemaphore.Release();
         }
+
     });
 
 
