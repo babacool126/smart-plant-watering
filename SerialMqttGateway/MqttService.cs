@@ -28,12 +28,19 @@ public sealed class MqttService : IAsyncDisposable
         _mqttClient.ApplicationMessageReceivedAsync += async e =>
         {
             string receivedTopic = e.ApplicationMessage.Topic;
+
+            if (receivedTopic != topic)
+            {
+                return;
+            }
+
             string payload = e.ApplicationMessage.ConvertPayloadToString();
 
             await messageHandler(receivedTopic, payload);
         };
 
         await _mqttClient.SubscribeAsync(topic);
+
     }
 
     public async Task PublishAsync(string topic, string payload)

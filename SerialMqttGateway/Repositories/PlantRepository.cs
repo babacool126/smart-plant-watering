@@ -40,4 +40,16 @@ public class PlantRepository : IPlantRepository
             .Take(limit)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<List<WateringEvent>> GetRecentWateringEventsAsync(
+        int plantId,
+        int limit = 20,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.WateringEvents
+            .Where(wateringEvent => wateringEvent.PlantId == plantId)
+            .OrderByDescending(wateringEvent => wateringEvent.StartedAt)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
 }
