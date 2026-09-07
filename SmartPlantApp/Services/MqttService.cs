@@ -95,4 +95,22 @@ public class MqttService
 
         Console.WriteLine("History request published.");
     }
+
+    public async Task PublishPumpCommandAsync(string action)
+    {
+        var payload = JsonSerializer.Serialize(new
+        {
+            action
+        });
+
+        var message = new MqttApplicationMessageBuilder()
+            .WithTopic("plant/pump/command")
+            .WithPayload(payload)
+            .Build();
+
+        await _mqttClient.PublishAsync(message);
+
+        Console.WriteLine($"Pump command published: {action}");
+    }
+
 }

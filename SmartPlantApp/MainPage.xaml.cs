@@ -67,6 +67,34 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private async void OnStartPumpClicked(
+        object sender,
+        EventArgs e)
+    {
+        try
+        {
+            await _mqttService.PublishPumpCommandAsync("on");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to start pump: {ex.Message}");
+        }
+    }
+
+    private async void OnStopPumpClicked(
+        object sender,
+        EventArgs e)
+    {
+        try
+        {
+            await _mqttService.PublishPumpCommandAsync("off");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to stop pump: {ex.Message}");
+        }
+    }
+
     private void ShowHistory(string payload)
     {
         try
