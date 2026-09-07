@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using SerialMqttGateway.Data;
 using SerialMqttGateway.Models;
 
@@ -26,5 +27,17 @@ public class PlantRepository : IPlantRepository
     {
         _dbContext.WateringEvents.Add(wateringEvent);
         await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<List<SensorReading>> GetRecentSensorReadingsAsync(
+        int plantId,
+        int limit = 20,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.SensorReadings
+            .Where(reading => reading.PlantId == plantId)
+            .OrderByDescending(reading => reading.MeasuredAt)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
     }
 }
