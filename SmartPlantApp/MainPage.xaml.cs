@@ -1,13 +1,32 @@
-﻿namespace SmartPlantApp;
+﻿using SmartPlantApp.Services;
+
+namespace SmartPlantApp;
 
 public partial class MainPage : ContentPage
 {
 	int count = 0;
 
-	public MainPage()
-	{
-		InitializeComponent();
-	}
+  private readonly MqttService _mqttService = new();
+
+  public MainPage()
+  {
+    InitializeComponent();
+  }
+
+protected override async void OnAppearing()
+  {
+    base.OnAppearing();
+
+    try
+    {
+      await _mqttService.ConnectAsync();
+      Console.WriteLine("Connected to MQTT broker.");
+    }
+    catch (Exception ex)
+    {
+      Console.WriteLine($"MQTT connection failed: {ex.Message}");
+    }
+  }
 
 	private void OnCounterClicked(object sender, EventArgs e)
 	{
