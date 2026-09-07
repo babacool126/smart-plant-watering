@@ -36,6 +36,22 @@
                 FontAttributes="Bold" />
 
             <Label
+                Text="Handmatige bewatering"
+                FontSize="20"
+                FontAttributes="Bold"
+                Margin="0,16,0,0" />
+
+            <HorizontalStackLayout Spacing="12">
+                <Button
+                    Text="Pomp starten"
+                    Clicked="OnStartPumpClicked" />
+
+                <Button
+                    Text="Pomp stoppen"
+                    Clicked="OnStopPumpClicked" />
+            </HorizontalStackLayout>
+
+            <Label
                 Text="Historie"
                 FontSize="28"
                 FontAttributes="Bold"
