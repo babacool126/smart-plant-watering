@@ -107,9 +107,16 @@ De gateway:
 - leest sensormetingen via USB-serial;
 - publiceert sensormetingen naar MQTT;
 - ontvangt pompcommando's via MQTT;
-- stuurt pompcommando's door naar de Arduino.
+- stuurt pompcommando's door naar de Arduino;
+- verwerkt de persistente opslag van metingen en bewateringsacties.
 
-> TODO: projectdirectory, COM-poortconfiguratie en exact startcommando toevoegen.
+Ga in PowerShell naar de projectdirectory van de gateway en start de applicatie met:
+
+```powershell
+dotnet run
+```
+
+De gateway moet tijdens het gebruik van het systeem actief blijven. Wanneer de gateway wordt gestopt, worden geen nieuwe sensormetingen via MQTT gepubliceerd.
 
 ## 6. .NET MAUI-app bouwen
 
