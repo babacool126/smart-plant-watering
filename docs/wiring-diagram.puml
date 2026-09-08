@@ -1,0 +1,92 @@
+@startuml
+title Smart Plant Watering - Bedradingsschema
+
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+
+rectangle "Arduino UNO R3" as Arduino {
+  rectangle "A0" as A0
+  rectangle "D2" as D2
+  rectangle "D7" as D7
+  rectangle "5V" as V5
+  rectangle "GND" as GND
+  rectangle "USB" as USB
+}
+
+rectangle "Bodemvochtsensor" as Moisture {
+  rectangle "VCC" as MoistureVCC
+  rectangle "GND" as MoistureGND
+  rectangle "AOUT" as MoistureAOUT
+}
+
+rectangle "DHT11" as DHT {
+  rectangle "VCC" as DHTVCC
+  rectangle "GND" as DHTGND
+  rectangle "DATA" as DHTDATA
+}
+
+rectangle "5V relaismodule" as Relay {
+  rectangle "VCC" as RelayVCC
+  rectangle "GND" as RelayGND
+  rectangle "IN" as RelayIN
+  rectangle "COM" as RelayCOM
+  rectangle "NO" as RelayNO
+}
+
+rectangle "Dompelpomp" as Pump {
+  rectangle "+" as PumpPlus
+  rectangle "-" as PumpMinus
+}
+
+rectangle "4x AA batterijpack" as Battery {
+  rectangle "+" as BatteryPlus
+  rectangle "-" as BatteryMinus
+}
+
+rectangle "Windows PC\nC# Serial/MQTT Gateway" as PC
+
+' Bodemvochtsensor
+V5 -- MoistureVCC : 5V
+GND -- MoistureGND : GND
+A0 -- MoistureAOUT : analoog signaal
+
+' DHT11
+V5 -- DHTVCC : 5V
+GND -- DHTGND : GND
+D2 -- DHTDATA : digitaal signaal
+
+' Relais besturing
+V5 -- RelayVCC : 5V
+GND -- RelayGND : GND
+D7 -- RelayIN : HIGH = pomp aan
+
+' Externe pompkring
+BatteryPlus -- RelayCOM : voeding +
+RelayNO -- PumpPlus : geschakelde +
+PumpMinus -- BatteryMinus : voeding -
+
+' USB communicatie
+USB -- PC : USB Serial\n9600 baud
+
+note right of D7
+RELAY_PIN = 7
+LOW  = relais uit
+HIGH = relais aan
+end note
+
+note right of A0
+MOISTURE_PIN = A0
+Automatische bewatering
+wordt bepaald door
+bodemvocht.
+end note
+
+note right of D2
+DHT_PIN = 2
+Temperatuur en
+luchtvochtigheid
+worden alleen gemeten.
+end note
+
+@enduml
