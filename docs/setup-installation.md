@@ -150,6 +150,30 @@ PLANT_DB_CONNECTION
 
 Deze environmentvariabele moet in PowerShell zijn ingesteld voordat de gateway wordt gestart.
 
+### Database-migraties
+
+De database wordt beheerd met Entity Framework Core.
+
+Controleer eerst welke migrations beschikbaar zijn:
+
+```powershell
+dotnet ef migrations list
+```
+
+De huidige initiële migration is:
+
+```text
+20260906192440_InitialCreate
+```
+
+Voer de migrations uit op de geconfigureerde PostgreSQL-database:
+
+```powershell
+dotnet ef database update
+```
+
+Hiervoor moet de environmentvariabele `PLANT_DB_CONNECTION` zijn ingesteld en moet PostgreSQL bereikbaar zijn.
+
 ### Gateway starten
 
 Ga vanuit de repository naar de gateway:
