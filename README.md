@@ -7,6 +7,7 @@ IoT-systeem voor automatische plantenbewatering met bodemvocht- en temperatuurse
 - [Probleemstelling](#probleemstelling)
 - [Architectuur](#architectuur)
 - [Techstack en keuzes](#techstack-en-keuzes)
+- [Databasekeuze](#databasekeuze)
 - [Concurrency-aanpak](#concurrency-aanpak)
 - [Hardware](#hardware)
 - [Setup en installatie](#setup-en-installatie)
@@ -21,31 +22,32 @@ Kamerplanten hebben regelmatig water nodig, maar dit wordt in de praktijk vaak v
 
 ### Systeemoverzicht
 
+```text
+Arduino UNO
+(sensoren, relais, pomp)
+        |
+        | USB-serial
+        v
+C# Serial/MQTT-gateway
+        |
+        | MQTT publish/subscribe
+        v
+Mosquitto broker
+        |
+        +-------------------+
+        |                   |
+        v                   v
+.NET MAUI-app          PostgreSQL
+(presentatielaag)      (persistente opslag)
 ```
-                  .NET MAUI GUI
-                  (presentatielaag)
-                        |
-                  Service layer
-                  (orkestreert taken)
-                        |
-        +---------------+----------------+
-        |               |                |
-  Serial service   MQTT service   Database service
-  (Arduino comm.)  (pub/sub)      (EF Core repository)
-        |               |                |
-        v               v                v
-   Arduino UNO     Mosquitto broker    Database
-   (sensoren,       (lokaal)
-    relais, pomp)
-```
- 
-- **GUI → service layer**: de GUI kent alleen de service layer, niet de onderliggende techniek (Arduino/MQTT/database).
-- **Service layer → serial service**: seriële communicatie (USB) met de Arduino UNO — sensordata ontvangen, pompcommando's versturen.
-- **Service layer → MQTT service**: publiceert sensordata naar topics, luistert op commando-topics (MQTTnet).
-- **Service layer → database service**: schrijft metingen en waterbeurten weg via EF Core.
-*TODO: exacte topic-namen en berichtformaten (bv. JSON-payload per topic) toevoegen zodra vastgesteld.*
- 
-*TODO: korte toelichting per pijl (wat gaat er precies over, welk protocol/formaat).*
+
+- **Arduino → Serial/MQTT-gateway**: de Arduino leest de sensoren uit en stuurt de meetgegevens via USB-serial naar de Windows-computer. De gateway kan daarnaast pompcommando's naar de Arduino sturen.
+- **Serial/MQTT-gateway → Mosquitto**: de gateway publiceert sensormetingen naar MQTT-topics en abonneert zich op het topic voor pompcommando's.
+- **Mosquitto → .NET MAUI-app**: de mobiele applicatie abonneert zich op MQTT-topics en toont actuele sensorwaarden en pompstatus.
+- **PostgreSQL**: persistente opslag voor sensormetingen en bewateringsacties.
+
+De gebruikte MQTT-topics en JSON-berichtformaten zijn vastgelegd in
+[`docs/mqtt-contract.md`](docs/mqtt-contract.md).
 
 ### Klassendiagram (conceptueel model)
 
@@ -82,8 +84,8 @@ Het relationele schema is afgeleid van het klassendiagram en beschreven in
 |---|---|---|
 | Microcontroller | Arduino UNO R3 | *TODO* |
 | App | .NET MAUI | Opvolger van Xamarin, C#-ervaring herbruikbaar |
-| Communicatie Arduino ↔ app | USB serial | Geen extra hardware nodig, simpel te implementeren |
-| Communicatie app ↔ backend | MQTT (MQTTnet) | Standaardprotocol voor IoT, dekt socketcommunicatie-leerdoel |
+| Communicatie Arduino ↔ gateway | USB serial | Geen extra hardware nodig, simpel te implementeren |
+| Communicatie gateway ↔ backend/app | MQTT (MQTTnet) | Standaardprotocol voor IoT, dekt socketcommunicatie-leerdoel |
 | Broker | Mosquitto (lokaal) | Geen internetafhankelijkheid tijdens demo |
 | Opslag | PostgreSQL + EF Core | Centrale relationele opslag; PostgreSQL draait als Podman-container met persistente opslag |
 
@@ -123,12 +125,17 @@ Podman-containers worden gebruikt.
 
 ## Concurrency-aanpak
 
-*TODO: beschrijf de drie taken die parallel lopen in de MAUI-app:*
-- *Task 1: seriële uitlezing Arduino*
-- *Task 2: MQTT publish/subscribe*
-- *Task 3: automatische bewateringslogica (periodiek)*
+De C# Serial/MQTT-gateway voert meerdere taken gelijktijdig uit.
 
-*Beschrijf ook de thread-safe queue tussen reader en publisher, en de lock/semaphore rond de pompstatus om race conditions te voorkomen.*
+De serial-reader ontvangt continu berichten van de Arduino via USB. Deze berichten moeten verwerkt kunnen worden zonder dat de MQTT-communicatie wordt geblokkeerd.
+
+De MQTT-service publiceert ontvangen sensormetingen naar Mosquitto en verwerkt inkomende pompcommando's.
+
+Voor de communicatie tussen gelijktijdig uitgevoerde taken wordt een thread-safe mechanisme gebruikt, zodat meerdere taken niet tegelijkertijd onveilig dezelfde gedeelde data wijzigen.
+
+De pompstatus moet eveneens gecontroleerd worden wanneer meerdere taken deze status kunnen lezen of aanpassen. Hiermee worden race conditions voorkomen.
+
+De .NET MAUI-app werkt los van de seriële communicatie en ontvangt de relevante gegevens via MQTT.
 
 ## Hardware
 
@@ -146,8 +153,9 @@ Podman-containers worden gebruikt.
 *TODO:*
 1. *Arduino: welke libraries, welke sketch uploaden*
 2. *Mosquitto: installatie en configuratie*
-3. *MAUI-app: hoe te builden en te runnen*
-4. *Database: connection string / migratie-commando's*
+3. *Serial/MQTT-gateway: configuratie en starten*
+4. *MAUI-app: hoe te builden en te runnen*
+5. *Database: connection string / migratie-commando's*
 
 ## Demo
 
@@ -158,5 +166,3 @@ Podman-containers worden gebruikt.
 - Tweede plant (extra bodemvochtsensor + extra pomp, zelfde architectuur)
 - Waterniveausensor in het reservoir (voorkomt droog draaien van de pomp)
 - Wireless communicatie Arduino ↔ app (ESP32/Bluetooth) i.p.v. USB serial
-
-
