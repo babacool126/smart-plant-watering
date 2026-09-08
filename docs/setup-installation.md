@@ -150,6 +150,12 @@ PLANT_DB_CONNECTION
 
 Deze environmentvariabele moet in PowerShell zijn ingesteld voordat de gateway wordt gestart.
 
+Ga vanuit de repository naar de gateway:
+
+```powershell
+cd .\SerialMqttGateway
+```
+
 ### Database-migraties
 
 De database wordt beheerd met Entity Framework Core.
@@ -175,12 +181,6 @@ dotnet ef database update
 Hiervoor moet de environmentvariabele `PLANT_DB_CONNECTION` zijn ingesteld en moet PostgreSQL bereikbaar zijn.
 
 ### Gateway starten
-
-Ga vanuit de repository naar de gateway:
-
-```powershell
-cd .\SerialMqttGateway
-```
 
 Start vervolgens de gateway:
 

@@ -150,12 +150,8 @@ De .NET MAUI-app werkt los van de seriële communicatie en ontvangt de relevante
 
 ## Setup en installatie
 
-*TODO:*
-1. *Arduino: welke libraries, welke sketch uploaden*
-2. *Mosquitto: installatie en configuratie*
-3. *Serial/MQTT-gateway: configuratie en starten*
-4. *MAUI-app: hoe te builden en te runnen*
-5. *Database: connection string / migratie-commando's*
+De volledige setup- en installatiehandleiding is beschreven in
+[`docs/setup-installation.md`](docs/setup-installation.md).
 
 ## Demo
 
