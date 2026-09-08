@@ -102,21 +102,71 @@ systemctl --user start plant-postgres.service
 
 De C# Serial/MQTT-gateway draait op de Windows-computer waarop de Arduino via USB is aangesloten.
 
+De gateway vormt de koppeling tussen de Arduino, Mosquitto en PostgreSQL.
+
 De gateway:
 
 - leest sensormetingen via USB-serial;
 - publiceert sensormetingen naar MQTT;
 - ontvangt pompcommando's via MQTT;
 - stuurt pompcommando's door naar de Arduino;
-- verwerkt de persistente opslag van metingen en bewateringsacties.
+- slaat sensormetingen en bewateringsacties op in PostgreSQL;
+- levert historische metingen via MQTT aan de mobiele app.
 
-Ga in PowerShell naar de projectdirectory van de gateway en start de applicatie met:
+### Seriële verbinding
+
+De Arduino wordt via USB aangesloten en gebruikt:
+
+```text
+COM3
+9600 baud
+```
+
+Controleer vóór het starten van de gateway of de Arduino als `COM3` beschikbaar is.
+
+Wanneer Windows een andere COM-poort toewijst, moet de COM-poort in `Program.cs` worden aangepast.
+
+### MQTT
+
+De gateway maakt verbinding met de Mosquitto-broker op:
+
+```text
+node-01.lab.thomaslab.nl:1883
+```
+
+De gebruikte MQTT-topics en JSON-berichtformaten zijn beschreven in:
+
+[`mqtt-contract.md`](mqtt-contract.md)
+
+### PostgreSQL-verbinding
+
+De PostgreSQL-connectionstring wordt niet in de broncode opgeslagen.
+
+De gateway leest deze uit de volgende environmentvariabele:
+
+```text
+PLANT_DB_CONNECTION
+```
+
+Deze environmentvariabele moet in PowerShell zijn ingesteld voordat de gateway wordt gestart.
+
+### Gateway starten
+
+Ga vanuit de repository naar de gateway:
+
+```powershell
+cd .\SerialMqttGateway
+```
+
+Start vervolgens de gateway:
 
 ```powershell
 dotnet run
 ```
 
-De gateway moet tijdens het gebruik van het systeem actief blijven. Wanneer de gateway wordt gestopt, worden geen nieuwe sensormetingen via MQTT gepubliceerd.
+De gateway moet tijdens het gebruik van het systeem actief blijven.
+
+Wanneer de gateway niet draait, worden geen nieuwe sensormetingen via MQTT gepubliceerd en verschijnen er geen actuele waarden in de mobiele app.
 
 ## 6. .NET MAUI-app bouwen
 
@@ -198,16 +248,13 @@ Arduino
    | USB-serial
    v
 C# Serial/MQTT-gateway
+   |                 |
+   | MQTT            | EF Core
+   v                 v
+Mosquitto         PostgreSQL
    |
-   | MQTT
    v
-Mosquitto
-   |
-   +----> .NET MAUI-app
-
-PostgreSQL
-   |
-   +----> persistente opslag van metingen en bewateringsacties
+.NET MAUI-app
 ```
 
 ## 9. Verdere configuratie
