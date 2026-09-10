@@ -157,10 +157,13 @@ Stel dus deze environmentvariabele eenmalig permanent in voor de huidige Windows
     "Host=<database-host>;Port=5432;Database=<database>;Username=<username>;Password=<password>",
     "User"
 )
-```
 
+$env:PLANT_DB_CONNECTION = [Environment]::GetEnvironmentVariable(
+    "PLANT_DB_CONNECTION",
+    "User"
+)
+```
 Gebruik hierbij de juiste PostgreSQL-hostnaam, databasenaam, gebruikersnaam en het bijbehorende wachtwoord.
-Als je dit gedaan hebben MOET je deze terminal afsluiten en een nieuwe terminal openen.
 
 Ga vervolgens vanuit de repository naar de gateway:
 
