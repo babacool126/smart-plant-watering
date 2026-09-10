@@ -149,6 +149,17 @@ PLANT_DB_CONNECTION
 ```
 
 Deze environmentvariabele moet in PowerShell zijn ingesteld voordat de gateway wordt gestart.
+Stel dus deze environmentvariabele eenmalig permanent in voor de huidige Windows-gebruiker:
+
+```powershell
+[Environment]::SetEnvironmentVariable(
+    "PLANT_DB_CONNECTION",
+    "Host=<database-host>;Port=5432;Database=<database>;Username=<username>;Password=<password>",
+    "User"
+)
+```
+
+Gebruik hierbij de juiste PostgreSQL-hostnaam, databasenaam, gebruikersnaam en het bijbehorende wachtwoord.
 
 Ga vanuit de repository naar de gateway:
 
