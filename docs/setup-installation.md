@@ -160,8 +160,9 @@ Stel dus deze environmentvariabele eenmalig permanent in voor de huidige Windows
 ```
 
 Gebruik hierbij de juiste PostgreSQL-hostnaam, databasenaam, gebruikersnaam en het bijbehorende wachtwoord.
+Als je dit gedaan hebben MOET je deze terminal afsluiten en een nieuwe terminal openen.
 
-Ga vanuit de repository naar de gateway:
+Ga vervolgens vanuit de repository naar de gateway:
 
 ```powershell
 cd .\SerialMqttGateway
