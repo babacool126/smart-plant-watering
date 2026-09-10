@@ -158,7 +158,6 @@ Stel dus deze environmentvariabele eenmalig permanent in voor de huidige Windows
     "User"
 )
 
-
 $env:PLANT_DB_CONNECTION = [Environment]::GetEnvironmentVariable(
     "PLANT_DB_CONNECTION",
     "User"
