@@ -157,9 +157,8 @@ Stel dus deze environmentvariabele eenmalig permanent in voor de huidige Windows
     "Host=<database-host>;Port=5432;Database=<database>;Username=<username>;Password=<password>",
     "User"
 )
-```
 
-```powershell
+
 $env:PLANT_DB_CONNECTION = [Environment]::GetEnvironmentVariable(
     "PLANT_DB_CONNECTION",
     "User"
